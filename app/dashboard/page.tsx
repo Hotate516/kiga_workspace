@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation'; // <<< useRouterをインポート
+import { useUserStore } from '@/store/user';
 
 // アイコンコンポーネント (変更なし)
 const KigaLogoIcon = () => (
@@ -30,31 +31,40 @@ const Squares2X2Icon = () => (
 
 
 export default function KigaSpacePage() {
-    const router = useRouter(); // <<< useRouterフックを取得
+  const router = useRouter();
+  const { user , loaded } = useUserStore();
 
-    const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, appName: string) => {
-        const target = e.target as HTMLElement;
-        const isButtonClicked = target.tagName === 'BUTTON' || target.closest('button');
+  // まだユーザーデータの読み込みが終わっていない場合
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-500 text-lg">
+        読み込み中...
+      </div>
+    );
+  }
 
-        if (appName === 'KigaNote') {
-            router.push('/dashboard/KigaNote'); // KigaNoteページへ遷移
-            return; // アラートは表示しない
-        }
-        
-        // KigaNote以外の場合のアラート処理
-        if (isButtonClicked) {
-            alert(`${appName}を開きます（ボタン）`);
-        } else {
-            alert(`${appName}に移動します（カード全体）`);
-        }
-    };
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, appName: string) => {
+    const target = e.target as HTMLElement;
+    const isButtonClicked = target.tagName === 'BUTTON' || target.closest('button');
 
-    const scrollToKigaApps = () => {
-        const section = document.getElementById('kiga-applications-section');
-        if (section) {
-            section.scrollIntoView({ behavior: 'smooth' });
-        }
-    };
+    if (appName === 'KigaNote') {
+      router.push('/dashboard/KigaNote');
+      return;
+    }
+
+    if (isButtonClicked) {
+      alert(`${appName}を開きます（ボタン）`);
+    } else {
+      alert(`${appName}に移動します（カード全体）`);
+    }
+  };
+
+  const scrollToKigaApps = () => {
+    const section = document.getElementById('kiga-applications-section');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
     return (
         <div className="flex h-screen antialiased dark">
@@ -95,16 +105,16 @@ export default function KigaSpacePage() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto bg-slate-100 dark:bg-[#0F172A]">
-                <div className="container mx-auto px-6 py-8 md:px-10">
-                    <div className="mb-10 text-center">
-                        <h2 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100 mb-3">
-                            こんにちは、ユーザーさん 👋
-                        </h2>
-                        <p className="text-lg text-gray-500 dark:text-gray-400">
-                            今日も素晴らしい一日にしましょう。あなたのワークスペースへようこそ！
-                        </p>
-                    </div>
+                  <main className="flex-1 overflow-y-auto bg-slate-100 dark:bg-[#0F172A]">
+        <div className="container mx-auto px-6 py-8 md:px-10">
+          <div className="mb-10 text-center">
+            <h2 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100 mb-3">
+              こんにちは、{user?.name || "ユーザー"}さん 👋
+            </h2>
+            <p className="text-lg text-gray-500 dark:text-gray-400">
+              今日も素晴らしい一日にしましょう。あなたのワークスペースへようこそ！
+            </p>
+          </div>
 
                     {/* Main Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
@@ -284,14 +294,27 @@ export default function KigaSpacePage() {
             </main>
 
             {/* Right Sidebar (変更なし) */}
-            <aside className="w-16 bg-slate-100 dark:bg-[#0F172A] p-3 flex flex-col items-center space-y-5 shadow-lg border-l dark:border-slate-700">
-                 <button className="p-2 mt-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none transition-colors duration-200">
-                    <BellIcon />
-                </button>
-                <button className="w-9 h-9 bg-pink-500 dark:bg-pink-600 text-white rounded-full flex items-center justify-center font-bold text-base focus:outline-none hover:bg-pink-600 dark:hover:bg-pink-700 transition-colors duration-200 shadow-md">
-                    ユ
-                </button>
-            </aside>
+                  <aside className="w-16 bg-slate-100 dark:bg-[#0F172A] p-3 flex flex-col items-center space-y-5 shadow-lg border-l dark:border-slate-700">
+        <button className="p-2 mt-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none transition-colors duration-200">
+          <BellIcon />
+        </button>
+        <button
+          onClick={() => router.push('/dashboard/profile')}
+          className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 border border-gray-300 flex items-center justify-center"
+        >
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt="User"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-sm font-bold text-gray-600">
+              {user?.name?.charAt(0) || "?"}
+            </span>
+          )}
+        </button>
+      </aside>
         </div>
     );
 }
