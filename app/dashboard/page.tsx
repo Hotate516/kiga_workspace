@@ -1,12 +1,13 @@
-// app/dashboard/page.tsx (または該当するページのパス)
+// app/dashboard/page.tsx
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation'; // <<< useRouterをインポート
 
-// 仮のSVGアイコンコンポーネント
+// アイコンコンポーネント (変更なし)
 const KigaLogoIcon = () => (
     <svg
-        className="w-5 h-5 mr-2 text-white" // サイズを小さく (例: w-5 h-5)
+        className="w-5 h-5 mr-2 text-white"
         viewBox="0 0 28 28"
         xmlns="http://www.w3.org/2000/svg"
         fill="currentColor"
@@ -21,19 +22,26 @@ const BellIcon = () => (
     </svg>
 );
 
-const Squares2X2Icon = () => ( // アプリ一覧用アイコンの例
+const Squares2X2Icon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
     </svg>
 );
 
 
 export default function KigaSpacePage() {
+    const router = useRouter(); // <<< useRouterフックを取得
 
     const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, appName: string) => {
         const target = e.target as HTMLElement;
         const isButtonClicked = target.tagName === 'BUTTON' || target.closest('button');
 
+        if (appName === 'KigaNote') {
+            router.push('/dashboard/KigaNote'); // KigaNoteページへ遷移
+            return; // アラートは表示しない
+        }
+        
+        // KigaNote以外の場合のアラート処理
         if (isButtonClicked) {
             alert(`${appName}を開きます（ボタン）`);
         } else {
@@ -49,24 +57,19 @@ export default function KigaSpacePage() {
     };
 
     return (
-        // ダークモードを有効にするためにルート要素に 'dark' クラスを適用
-        <div className="flex h-screen antialiased dark"> {/* <<< 'dark' クラスをここに適用 */}
-            {/* Left Sidebar */}
+        <div className="flex h-screen antialiased dark">
+            {/* Left Sidebar (変更なし) */}
             <aside className="w-64 bg-gradient-to-b from-purple-600 to-pink-600 text-white p-5 flex flex-col shadow-2xl">
-                {/* Logo and Title Area */}
                 <div className="flex items-center mb-6 pt-2">
                     <KigaLogoIcon />
                     <div>
-                        <span className="text-xl font-bold tracking-tight">Kiga Workspace</span> {/* タイトル変更 */}
+                        <span className="text-xl font-bold tracking-tight">Kiga Workspace</span>
                         <p className="text-xs text-purple-200 opacity-90 font-medium">
                             Key Intelligence Gateway for Advancement
                         </p>
                     </div>
                 </div>
-
-                <div className="border-t border-white/20 my-4"></div> {/* 区切り線 */}
-
-                {/* Navigation Area */}
+                <div className="border-t border-white/20 my-4"></div>
                 <nav className="space-y-1">
                     <a href="#" className="flex items-center py-2.5 px-3 rounded-lg transition duration-200 bg-white/10 dark:hover:bg-white/20">
                         <span className="text-sm font-medium">ダッシュボード</span>
@@ -75,11 +78,8 @@ export default function KigaSpacePage() {
                         <span className="text-sm font-medium">設定</span>
                     </a>
                 </nav>
-
-                <div className="border-t border-white/20 my-4"></div> {/* 区切り線 */}
-
-                {/* App List Button Area - Placed towards the bottom */}
-                <div className="mt-auto"> {/* mt-autoで下部にプッシュ */}
+                <div className="border-t border-white/20 my-4"></div>
+                <div className="mt-auto">
                      <button
                         onClick={scrollToKigaApps}
                         className="flex w-full items-center py-2.5 px-3 rounded-lg transition duration-200 hover:bg-white/10 dark:hover:bg-white/20 text-left"
@@ -87,7 +87,7 @@ export default function KigaSpacePage() {
                         <Squares2X2Icon />
                         <span className="text-sm font-medium">アプリ一覧</span>
                     </button>
-                    <div className="border-t border-white/20 my-4"></div> {/* 区切り線 */}
+                    <div className="border-t border-white/20 my-4"></div>
                     <div className="pb-2">
                        <p className="text-xs text-center text-purple-200 opacity-70">© 2024 Kiga Workspace</p>
                     </div>
@@ -95,7 +95,6 @@ export default function KigaSpacePage() {
             </aside>
 
             {/* Main Content Area */}
-            {/* ダークモードの背景色を画像に合わせて調整 (例: #0f172a or a custom darker blue-gray) */}
             <main className="flex-1 overflow-y-auto bg-slate-100 dark:bg-[#0F172A]">
                 <div className="container mx-auto px-6 py-8 md:px-10">
                     <div className="mb-10 text-center">
@@ -108,11 +107,11 @@ export default function KigaSpacePage() {
                     </div>
 
                     {/* Main Cards */}
-                    {/* ダークモードのカード背景色を画像に合わせて調整 (例: #1e293b) */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                        {/* KigaNote Card - id と appName を修正 */}
                         <div
-                            id="notion-card"
-                            onClick={(e) => handleCardClick(e, 'Notion風ページ')}
+                            id="KigaNote-card" // id を KigaNote-card に (一意性を保つため)
+                            onClick={(e) => handleCardClick(e, 'KigaNote')} // appName を 'KigaNote' に
                             className="card-hover-effect bg-white dark:bg-[#1E293B] rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700 cursor-pointer"
                         >
                             <div className="p-8">
@@ -121,14 +120,18 @@ export default function KigaSpacePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Notion風ページ</h3>
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">KigaNote</h3> {/* タイトルを KigaNote に */}
                                 <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm">メモ、ドキュメント、ナレッジベースを整理して管理します。</p>
-                                <button className="button-pop w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300">
+                                <button 
+                                    className="button-pop w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300"
+                                    // onClickイベントは親divのonClickで処理されるため、個別には不要
+                                >
                                     開く ✨
                                 </button>
                             </div>
                         </div>
 
+                        {/* Spreadsheet Card (変更なし) */}
                         <div
                             id="spreadsheet-card"
                             onClick={(e) => handleCardClick(e, 'スプレッドシート')}
@@ -148,6 +151,7 @@ export default function KigaSpacePage() {
                             </div>
                         </div>
 
+                        {/* Calendar Card (変更なし) */}
                         <div
                             id="calendar-card"
                             onClick={(e) => handleCardClick(e, 'カレンダー')}
@@ -168,7 +172,7 @@ export default function KigaSpacePage() {
                         </div>
                     </div>
 
-                    {/* Recent Activity */}
+                    {/* Recent Activity (変更なし) */}
                     <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl p-8 mb-12 border border-gray-200 dark:border-slate-700">
                         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-5">最近のアクティビティ</h3>
                         <div className="space-y-5">
@@ -208,7 +212,7 @@ export default function KigaSpacePage() {
                         </div>
                     </div>
 
-                    {/* Quick Access */}
+                    {/* Quick Access (変更なし) */}
                     <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl p-8 mb-12 border border-gray-200 dark:border-slate-700">
                         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-5">クイックアクセス</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -240,9 +244,9 @@ export default function KigaSpacePage() {
                         </div>
                     </div>
 
-                    {/* KIGA Applications Section */}
+                    {/* KIGA Applications Section (変更なし) */}
                     <div id="kiga-applications-section" className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-slate-700">
-                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-5">KIGA applications</h3>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-5">Kiga Applications</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <a href="https://kiga-ers-web.vercel.app/" target="_blank" rel="noopener noreferrer"
                                className="button-pop flex flex-col items-center justify-start p-6 bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl transition duration-300 shadow-lg h-full">
@@ -279,8 +283,7 @@ export default function KigaSpacePage() {
                 </div>
             </main>
 
-            {/* Right Sidebar */}
-            {/* ダークモードの右サイドバー背景色を調整 (例: #11141D or #0F172A) */}
+            {/* Right Sidebar (変更なし) */}
             <aside className="w-16 bg-slate-100 dark:bg-[#0F172A] p-3 flex flex-col items-center space-y-5 shadow-lg border-l dark:border-slate-700">
                  <button className="p-2 mt-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none transition-colors duration-200">
                     <BellIcon />
