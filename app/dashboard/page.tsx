@@ -48,7 +48,7 @@ export default function KigaSpacePage() {
     const isButtonClicked = target.tagName === 'BUTTON' || target.closest('button');
 
     if (appName === 'KigaNote') {
-      router.push('/dashboard/KigaNote');
+      alert('KigaNoteは現在再設計中です。');
       return;
     }
 
@@ -120,23 +120,23 @@ export default function KigaSpacePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                         {/* KigaNote Card - id と appName を修正 */}
                         <div
-                            id="KigaNote-card" // id を KigaNote-card に (一意性を保つため)
-                            onClick={(e) => handleCardClick(e, 'KigaNote')} // appName を 'KigaNote' に
-                            className="card-hover-effect bg-white dark:bg-[#1E293B] rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700 cursor-pointer"
+                            id="KigaNote-card"
+                            onClick={(e) => handleCardClick(e, 'KigaNote')}
+                            className="card-hover-effect bg-white dark:bg-[#1E293B] rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-50"
                         >
                             <div className="p-8">
-                                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-xl mb-5 shadow-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="flex items-center justify-center w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-xl mb-5 shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">KigaNote</h3> {/* タイトルを KigaNote に */}
-                                <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm">メモ、ドキュメント、ナレッジベースを整理して管理します。</p>
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">KigaNote</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm">現在、KigaNoteは再設計中です。ご不便をおかけして申し訳ありません。</p>
                                 <button 
-                                    className="button-pop w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300"
-                                    // onClickイベントは親divのonClickで処理されるため、個別には不要
+                                    className="button-pop w-full bg-gray-400 dark:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed"
+                                    disabled
                                 >
-                                    開く ✨
+                                    再設計中 🚧
                                 </button>
                             </div>
                         </div>
