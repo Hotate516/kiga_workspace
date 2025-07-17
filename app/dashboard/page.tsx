@@ -48,14 +48,15 @@ export default function KigaSpacePage() {
     const isButtonClicked = target.tagName === 'BUTTON' || target.closest('button');
 
     if (appName === 'KigaNote') {
-      alert('KigaNoteは現在再設計中です。');
+      router.push('/dashboard/KigaNote');
       return;
     }
 
     if (isButtonClicked) {
       alert(`${appName}を開きます（ボタン）`);
     } else {
-      alert(`${appName}に移動します（カード全体）`);
+      // KigaNote以外はまだ実装されていないためアラートを表示
+      alert(`${appName}は現在開発中です。`);
     }
   };
 
@@ -70,7 +71,10 @@ export default function KigaSpacePage() {
         <div className="flex h-screen antialiased dark">
             {/* Left Sidebar (変更なし) */}
             <aside className="w-64 bg-gradient-to-b from-purple-600 to-pink-600 text-white p-5 flex flex-col shadow-2xl">
-                <div className="flex items-center mb-6 pt-2">
+                <div
+                    className="flex items-center mb-6 pt-2 cursor-pointer"
+                    onClick={() => router.push('/dashboard')}
+                >
                     <KigaLogoIcon />
                     <div>
                         <span className="text-xl font-bold tracking-tight">Kiga Workspace</span>
@@ -122,21 +126,20 @@ export default function KigaSpacePage() {
                         <div
                             id="KigaNote-card"
                             onClick={(e) => handleCardClick(e, 'KigaNote')}
-                            className="card-hover-effect bg-white dark:bg-[#1E293B] rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700 cursor-not-allowed opacity-50"
+                            className="card-hover-effect bg-white dark:bg-[#1E293B] rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700 cursor-pointer"
                         >
                             <div className="p-8">
-                                <div className="flex items-center justify-center w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-xl mb-5 shadow-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl mb-5 shadow-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">KigaNote</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm">現在、KigaNoteは再設計中です。ご不便をおかけして申し訳ありません。</p>
-                                <button 
-                                    className="button-pop w-full bg-gray-400 dark:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed"
-                                    disabled
+                                <p className="text-gray-500 dark:text-gray-400 mb-5 text-sm">アイデアを整理し、思考を深めるための直感的なノートツール。</p>
+                                <button
+                                    className="button-pop w-full bg-gradient-to-r from-purple-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-300"
                                 >
-                                    再設計中 🚧
+                                    開く 📝
                                 </button>
                             </div>
                         </div>
