@@ -20,16 +20,26 @@ vi.mock('@/lib/firebase', () => {
   // @ts-ignore
   return { Timestamp: TimestampMock };
 });
+
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockPush,
   }),
 }));
-vi.mock('@tiptap/react', () => ({
-  useEditor: vi.fn(),
-  EditorContent: vi.fn(({ editor }) => <div data-testid="mock-editor-content" />),
-  Editor: vi.fn(() => null),
-}));
+
+vi.mock('@tiptap/react', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@tiptap/react')>();
+  return {
+    ...original,
+    useEditor: vi.fn(),
+    EditorContent: vi.fn(({ editor }) => {
+      const placeholderText = editor?.isEmpty ? "ここに入力してください..." : "";
+      return <div data-testid="mock-editor-content" data-placeholder={placeholderText} />;
+    }),
+    Editor: vi.fn(() => null),
+  };
+});
 vi.mock('@/store/user');
 
 // vi.mocked を使うためにモックされた関数をキャスト
@@ -92,6 +102,29 @@ const createUseKigaNoteMockValues = (
 
 
 const createFullTiptapEditorMock = () => {
+  // 各コマンドのモックを保持するオブジェクト
+  const commandMocks: { [key: string]: any } = {};
+
+  const commandMethods = [
+    'focus', 'setContent', 'toggleHeading', 'toggleBold', 'toggleItalic',
+    'toggleUnderline', 'toggleHighlight', 'setColor', 'unsetAllMarks', 'undo', 'redo',
+    'toggleStrike', 'toggleBulletList', 'toggleOrderedList', 'setParagraph',
+    'setHorizontalRule', 'setHardBreak', 'clearNodes', 'insertContent', 'setLink', 'unsetTextAlign',
+    'run'
+  ];
+
+  // チェーン可能なオブジェクトを生成するファクトリ
+  const createChainable = () => {
+    const chainable: { [key: string]: any } = {};
+    commandMethods.forEach(method => {
+      // 各メソッドのモックを作成し、常に chainable 自身を返すようにする
+      const mock = vi.fn(() => chainable);
+      chainable[method] = mock;
+      commandMocks[method] = mock; // 後でアサーションできるように保存
+    });
+    return chainable;
+  };
+
   const editor: any = {
     isEditable: true,
     destroy: vi.fn(),
@@ -99,32 +132,14 @@ const createFullTiptapEditorMock = () => {
     isActive: vi.fn(() => false),
     getJSON: vi.fn(() => ({ type: 'doc', content: [] })),
     getAttributes: vi.fn(() => ({})),
-    commands: {},
-    chain: vi.fn(),
-    can: vi.fn(),
+    // chain() が呼ばれるたびに、新しいチェーンインスタンスを返す
+    chain: () => createChainable(),
+    can: () => ({
+      chain: () => createChainable(),
+    }),
+    // テストから直接モックにアクセスできるようにする
+    _commandMocks: commandMocks,
   };
-
-  const commandMethods = [
-    'focus', 'setContent', 'toggleHeading', 'run', 'toggleBold', 'toggleItalic',
-    'toggleUnderline', 'toggleHighlight', 'setColor', 'unsetAllMarks', 'undo', 'redo',
-    'toggleStrike', 'toggleBulletList', 'toggleOrderedList', 'setParagraph',
-    'setHorizontalRule', 'setHardBreak', 'clearNodes', 'insertContent', 'setLink', 'unsetTextAlign'
-  ];
-
-  const chainable = {};
-  commandMethods.forEach(method => {
-    const commandMock = vi.fn(() => chainable);
-    editor.commands[method] = commandMock;
-    // @ts-ignore
-    chainable[method] = commandMock;
-  });
-  // @ts-ignore
-  chainable.run = vi.fn();
-
-  editor.chain = vi.fn(() => chainable);
-  editor.can = vi.fn(() => ({
-    chain: () => chainable,
-  }));
 
   return editor;
 };
@@ -134,6 +149,7 @@ describe('KigaNotePage', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    mockPush.mockClear();
 
     // useKigaNote のデフォルトモックを設定
     mockedUseKigaNote.mockReturnValue(createUseKigaNoteMockValues());
@@ -196,6 +212,25 @@ describe('KigaNotePage', () => {
     expect(screen.getByDisplayValue('Test Note 1')).toBeInTheDocument();
     expect(screen.getByText('Firebaseに保存')).toBeInTheDocument();
     expect(screen.getByTestId('mock-editor-content')).toBeInTheDocument();
+  });
+
+  it('should render multiple notes in the sidebar', async () => {
+    const notes = [
+      createMockNote('note-1', 'First Note'),
+      createMockNote('note-2', 'Second Note'),
+    ];
+    mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+      isLoading: false,
+      notesList: notes,
+      currentNoteId: 'note-1',
+      user: mockUser,
+      loaded: true,
+    }));
+
+    render(<KigaNotePage />);
+
+    expect(await screen.findByText('First Note')).toBeInTheDocument();
+    expect(screen.getByText('Second Note')).toBeInTheDocument();
   });
 
   it('should call handleCreateNewPage when "Create New Page" button is clicked', async () => {
@@ -291,5 +326,124 @@ describe('KigaNotePage', () => {
     fireEvent.change(titleInput, { target: { value: 'New Title' } });
 
     expect(mockSetPageTitle).toHaveBeenCalledWith('New Title');
+  });
+
+  it('should display "Saving..." status when isSaving is true', async () => {
+    const notes = [createMockNote('note-1', 'Test Note')];
+    mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+      isLoading: false,
+      notesList: notes,
+      currentNoteId: 'note-1',
+      user: mockUser,
+      loaded: true,
+      isSaving: true,
+    }));
+    render(<KigaNotePage />);
+
+    expect(await screen.findByText('保存中...')).toBeInTheDocument();
+  });
+
+  it('should display "Deleting" status when isDeleting is true', async () => {
+    const notes = [createMockNote('note-1', 'Test Note')];
+    mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+      isLoading: false,
+      notesList: notes,
+      currentNoteId: 'note-1',
+      user: mockUser,
+      loaded: true,
+      isDeleting: true,
+    }));
+    render(<KigaNotePage />);
+
+    // 削除ボタンのテキストが「削除中」に変わることを確認
+    const deleteButton = await screen.findByTitle('現在のノートを削除');
+    expect(deleteButton).toHaveTextContent('削除中');
+  });
+
+  describe('Authentication states', () => {
+    it('should display login prompt when user is not logged in', async () => {
+      mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+        isLoading: false,
+        user: null, // ユーザーがいない状態
+        loaded: true,
+      }));
+
+      render(<KigaNotePage />);
+
+      expect(await screen.findByText('KigaNoteを利用するにはログインしてください。')).toBeInTheDocument();
+      // サイドバーにもログインを促すメッセージがあることを確認
+      expect(screen.getByText('ログインしてください')).toBeInTheDocument();
+    });
+  });
+
+  describe('Right sidebar navigation', () => {
+    it('should navigate to profile page when profile icon is clicked', async () => {
+      mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+        isLoading: false,
+        notesList: [createMockNote('note-1', 'Test Note')],
+        currentNoteId: 'note-1',
+        user: mockUser,
+        loaded: true,
+      }));
+
+      render(<KigaNotePage />);
+
+      const profileButton = await screen.findByTitle(mockUser.name || "プロフィール");
+      fireEvent.click(profileButton);
+
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/profile');
+    });
+  });
+
+  describe('Toolbar interactions', () => {
+    it('should call toggleUnderline when underline button is clicked', async () => {
+      const notes = [createMockNote('note-1', 'Test Note')];
+      mockedUseKigaNote.mockReturnValueOnce(createUseKigaNoteMockValues({
+        isLoading: false,
+        notesList: notes,
+        currentNoteId: 'note-1',
+        user: mockUser,
+        loaded: true,
+      }));
+      render(<KigaNotePage />);
+
+      // Toolbarコンポーネント内の下線ボタンを探す
+      // 'title'属性が「下線」のボタンを探す
+      const underlineButton = await screen.findByTitle('下線');
+      fireEvent.click(underlineButton);
+
+      // モック化されたeditorのコマンドが呼ばれたか検証
+      // editor.chain()が呼ばれるたびに新しいモックが作られるため、
+      // クリック前にモックへの参照を保持することはできない。
+      // そのため、クリック後に呼び出された回数を直接アサートする。
+      expect(mockEditor._commandMocks.focus).toHaveBeenCalled();
+      expect(mockEditor._commandMocks.toggleUnderline).toHaveBeenCalledTimes(1);
+      expect(mockEditor._commandMocks.run).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Editor features', () => {
+    it('should have placeholder attribute when editor is empty', async () => {
+      const notes = [createMockNote('note-1', 'Test Note')];
+      mockedUseKigaNote.mockReturnValue(createUseKigaNoteMockValues({
+        isLoading: false,
+        notesList: notes,
+        currentNoteId: 'note-1',
+        user: mockUser,
+        loaded: true,
+      }));
+
+      // useEditorのモックをセットアップ
+      const editorWithPlaceholder = createFullTiptapEditorMock();
+      // @ts-ignore
+      editorWithPlaceholder.isEmpty = true; // エディタが空であると仮定
+      vi.mocked(useEditor).mockReturnValue(editorWithPlaceholder);
+
+      render(<KigaNotePage />);
+
+      // プレースホルダーの属性が正しく設定されていることを確認
+      const editorNode = await screen.findByTestId('mock-editor-content');
+      expect(editorNode).toHaveAttribute('data-placeholder', 'ここに入力してください...');
+    });
   });
 });

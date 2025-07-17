@@ -16,24 +16,10 @@ import Highlight from '@tiptap/extension-highlight';
 import Typography from '@tiptap/extension-typography';
 
 import Toolbar from './Toolbar';
+import Sidebar from './Sidebar';
+import RightSidebar from './RightSidebar';
+import LoggedOutView from './LoggedOutView'; // LoggedOutViewコンポーネントをインポート
 import { useKigaNote } from './hooks/useKigaNote';
-
-// (アイコンコンポーネントは変更なしのため省略)
-const KigaLogoIcon = () => (
-    <svg className="w-5 h-5 mr-2 text-white" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-        <path d="M6.99999 5.00003L14 12.0001L6.99999 19V5.00003Z M15 5H20V19H15V5Z"></path>
-    </svg>
-);
-const BellIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-);
-const Squares2X2Icon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-3">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25A2.25 2.25 0 0113.5 8.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 15.75V18a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z" />
-    </svg>
-);
 const SaveIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mr-2">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -113,67 +99,24 @@ export default function KigaNotePage() {
             </div>
         );
     }
-    if (!user && loaded) { 
-         return (
-            <div className="flex h-screen antialiased dark">
-                <aside className="w-64 bg-gradient-to-b from-purple-600 to-pink-600 text-white p-5 flex flex-col shadow-2xl">
-                    <div className="flex items-center mb-6 pt-2"> <KigaLogoIcon /> <div> <span className="text-xl font-bold tracking-tight">Kiga Workspace</span> <p className="text-xs text-purple-200 opacity-90 font-medium"> Key Intelligence Gateway for Advancement </p> </div> </div>
-                    <div className="border-t border-white/20 my-4"></div>
-                    <nav className="space-y-1"> <Link href="/dashboard" className="flex items-center py-2.5 px-3 rounded-lg transition duration-200 hover:bg-white/10" > <span className="text-sm font-medium">ダッシュボード</span> </Link> </nav>
-                    <div className="border-t border-white/20 my-4"></div>
-                    <div className="space-y-1 flex-grow overflow-y-auto pr-1">
-                        <h3 className="px-3 pt-2 pb-1 text-xs font-semibold text-purple-200 uppercase tracking-wider">KIGANOTE</h3>
-                        <p className="px-3 text-sm text-purple-200 opacity-70">ログインしてください</p>
-                    </div>
-                    <div className="mt-auto pt-2">
-                         <button onClick={scrollToKigaApps} className="flex w-full items-center py-2.5 px-3 rounded-lg transition duration-200 hover:bg-white/10 dark:hover:bg-white/20 text-left" >
-                            <Squares2X2Icon /> <span className="text-sm font-medium">アプリ一覧へ</span>
-                        </button>
-                        <div className="border-t border-white/20 my-4"></div> <div className="pb-2"> <p className="text-xs text-center text-purple-200 opacity-70">© 2024 Kiga Workspace</p> </div>
-                    </div>
-                </aside>
-                <main className="flex-1 overflow-y-auto bg-slate-100 dark:bg-[#0F172A] p-6 md:p-10 flex items-center justify-center">
-                    <p className="text-xl text-gray-500 dark:text-gray-400">KigaNoteを利用するにはログインしてください。</p>
-                </main>
-                <aside className="w-16 bg-slate-100 dark:bg-[#0F172A] p-3 flex flex-col items-center space-y-5 shadow-lg border-l dark:border-slate-700">
-                </aside>
-            </div>
-        );
+    if (!user && loaded) {
+        return <LoggedOutView scrollToKigaApps={scrollToKigaApps} />;
     }
 
     return (
         <div className="flex h-screen antialiased dark">
-            <aside className="w-64 bg-gradient-to-b from-purple-600 to-pink-600 text-white p-5 flex flex-col shadow-2xl">
-                <div className="flex items-center mb-6 pt-2"> <KigaLogoIcon /> <div> <span className="text-xl font-bold tracking-tight">Kiga Workspace</span> <p className="text-xs text-purple-200 opacity-90 font-medium"> Key Intelligence Gateway for Advancement </p> </div> </div>
-                <div className="border-t border-white/20 my-4"></div>
-                <nav className="space-y-1"> <Link href="/dashboard" className="flex items-center py-2.5 px-3 rounded-lg transition duration-200 hover:bg-white/10" > <span className="text-sm font-medium">ダッシュボード</span> </Link> </nav>
-                <div className="border-t border-white/20 my-4"></div>
-                <div className="space-y-1 flex-grow overflow-y-auto pr-1">
-                    <h3 className="px-3 pt-2 pb-1 text-xs font-semibold text-purple-200 uppercase tracking-wider">KIGANOTE</h3>
-                    {isLoading && notesList.length === 0 && ( <p className="px-3 text-sm text-purple-200 opacity-70">ノートリスト読込中...</p> )}
-                    {!isLoading && notesList.length === 0 && user && ( <p className="px-3 text-sm text-purple-200 opacity-70">ノートはありません。</p> )}
-
-                    {notesList.map(note => (
-                        <button key={note.id} onClick={() => handleSelectNote(note.id)}
-                            disabled={isNoteLoading || isDeleting}
-                            className={`flex w-full items-center py-2 px-3 rounded-lg transition duration-200 text-left truncate ${ currentNoteId === note.id ? 'bg-white/25' : 'hover:bg-white/10' } ${isNoteLoading || isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            title={note.title} >
-                            <span className="text-sm font-medium">{note.title || "無題"}</span>
-                        </button>
-                    ))}
-                </div>
-                 <button className="flex w-full items-center py-2.5 px-3 mt-2 rounded-lg transition duration-200 hover:bg-white/10 text-left border-t border-white/10"
-                    onClick={handleCreateNewPage}
-                    disabled={isSaving || isDeleting || isNoteLoading} >
-                    <span className="text-sm font-medium">＋ 新規ページ作成</span>
-                </button>
-                <div className="mt-auto pt-2">
-                     <button onClick={scrollToKigaApps} className="flex w-full items-center py-2.5 px-3 rounded-lg transition duration-200 hover:bg-white/10 dark:hover:bg-white/20 text-left" >
-                        <Squares2X2Icon /> <span className="text-sm font-medium">アプリ一覧へ</span>
-                    </button>
-                    <div className="border-t border-white/20 my-4"></div> <div className="pb-2"> <p className="text-xs text-center text-purple-200 opacity-70">© 2024 Kiga Workspace</p> </div>
-                </div>
-            </aside>
+            <Sidebar
+                notesList={notesList}
+                currentNoteId={currentNoteId}
+                isLoading={isLoading}
+                isNoteLoading={isNoteLoading}
+                isSaving={isSaving}
+                isDeleting={isDeleting}
+                user={user}
+                handleSelectNote={handleSelectNote}
+                handleCreateNewPage={handleCreateNewPage}
+                scrollToKigaApps={scrollToKigaApps}
+            />
 
             <main className="flex-1 overflow-y-auto bg-slate-100 dark:bg-[#0F172A] p-6 md:p-10">
                 {(isNoteLoading || (isLoading && currentNoteId)) && (
@@ -234,7 +177,7 @@ export default function KigaNotePage() {
                 )}
             </main>
 
-            <aside className="w-16 bg-slate-100 dark:bg-[#0F172A] p-3 flex flex-col items-center space-y-5 shadow-lg border-l dark:border-slate-700"> <button className="p-2 mt-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-700 focus:outline-none transition-colors duration-200"> <BellIcon /> </button> <button onClick={() => router.push('/dashboard/profile')} className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 flex items-center justify-center" title={user?.name || "プロフィール"} > {user?.photoURL ? ( <img src={user.photoURL} alt={user.name || "User"} className="w-full h-full object-cover" onError={(e) => { const target = e.target as HTMLImageElement; target.onerror = null; target.src = '/default-icon.png'; target.alt = user.name?.charAt(0) || "?"; }} /> ) : ( <span className="text-sm font-bold text-gray-600 dark:text-gray-300"> {user?.name?.charAt(0).toUpperCase() || "?"} </span> )} </button> </aside>
+            <RightSidebar user={user} />
         </div>
     );
 }

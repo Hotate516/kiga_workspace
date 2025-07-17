@@ -203,6 +203,11 @@ export const useKigaNote = (editor: Editor | null) => {
 
     const handleSelectNote = (noteId: string) => {
         if (noteId !== currentNoteId && !isNoteLoading && !isSaving && !isDeleting) {
+            // 切り替える前に、現在のノートの未保存の変更をキャッシュする
+            if (user && currentNoteId && editor) {
+                kigaNoteService.setCachedContent(user.uid, currentNoteId, editor.getJSON());
+                kigaNoteService.setCachedTitle(user.uid, currentNoteId, pageTitleRef.current);
+            }
             setCurrentNoteId(noteId);
         }
     };

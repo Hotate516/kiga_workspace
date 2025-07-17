@@ -57,8 +57,12 @@ const note1 = createMockNote('note-1', 'Note 1');
 const note2 = createMockNote('note-2', 'Note 2');
 
 describe('useKigaNote Hook', () => {
+  let cache: { [key: string]: any } = {};
+
   beforeEach(() => {
     vi.resetAllMocks();
+    cache = {}; // 各テストの前にキャッシュをリセット
+
     // useUserStore のデフォルトモック
     mockedUseUserStore.mockReturnValue({
       user: mockUser,
@@ -67,6 +71,20 @@ describe('useKigaNote Hook', () => {
     } as any);
     // toast のモック
     mockedToast.loading.mockReturnValue('toast-loading-id');
+
+    // kigaNoteServiceのキャッシュ関連のモックを実際の挙動に近づける
+    mockedKigaNoteService.setCachedContent.mockImplementation((uid, noteId, content) => {
+      cache[`${uid}-${noteId}-content`] = content;
+    });
+    mockedKigaNoteService.getCachedContent.mockImplementation((uid, noteId) => {
+      return cache[`${uid}-${noteId}-content`] || null;
+    });
+    mockedKigaNoteService.setCachedTitle.mockImplementation((uid, noteId, title) => {
+      cache[`${uid}-${noteId}-title`] = title;
+    });
+    mockedKigaNoteService.getCachedTitle.mockImplementation((uid, noteId) => {
+      return cache[`${uid}-${noteId}-title`] || null;
+    });
   });
 
   describe('Initial Data Loading', () => {
@@ -183,6 +201,187 @@ describe('useKigaNote Hook', () => {
 
         expect(mockedKigaNoteService.deleteNote).not.toHaveBeenCalled();
         expect(mockedToast.error).toHaveBeenCalledWith("最後のノートは削除できません。");
+    });
+  });
+
+  describe('Cache Handling', () => {
+    it('should load note from cache if available', async () => {
+      // 初期状態セットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      
+      // キャッシュのモック
+      const mockCachedContent = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'from-cache' }] }] };
+      mockedKigaNoteService.getCachedContent.mockReturnValue(mockCachedContent);
+      mockedKigaNoteService.getCachedTitle.mockReturnValue('Cached Title');
+
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+
+      // 初期ロードとノート選択を待つ
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+
+      // 検証
+      await waitFor(() => {
+        // キャッシュ取得が試みられる
+        expect(mockedKigaNoteService.getCachedContent).toHaveBeenCalledWith(mockUser.uid, 'note-1');
+        // キャッシュからコンテンツがセットされる
+        expect(mockEditor.commands.setContent).toHaveBeenCalledWith(mockCachedContent, false);
+        // タイトルもキャッシュからセットされる
+        expect(result.current.pageTitle).toBe('Cached Title');
+        // Firebaseからのデータ取得は呼ばれない
+        expect(mockedKigaNoteService.fetchNoteContent).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should load from Firebase and set cache if cache is not available', async () => {
+      // 初期状態セットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      
+      // キャッシュは存在しない
+      mockedKigaNoteService.getCachedContent.mockReturnValue(null);
+      mockedKigaNoteService.getCachedTitle.mockReturnValue(null);
+
+      // Firebaseからのレスポンスをモック
+      const mockFirebaseContent = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'from-firebase' }] }] };
+      mockedKigaNoteService.fetchNoteContent.mockResolvedValue(mockFirebaseContent);
+
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+
+      // 初期ロードとノート選択を待つ
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+
+      // 検証
+      await waitFor(() => {
+        // キャッシュ取得が試みられる
+        expect(mockedKigaNoteService.getCachedContent).toHaveBeenCalledWith(mockUser.uid, 'note-1');
+        // Firebaseから取得が呼ばれる
+        expect(mockedKigaNoteService.fetchNoteContent).toHaveBeenCalledWith(mockUser.uid, 'note-1');
+        // Firebaseのコンテンツがエディタにセットされる
+        expect(mockEditor.commands.setContent).toHaveBeenCalledWith(mockFirebaseContent, false);
+        // 取得したコンテンツがキャッシュに保存される
+        expect(mockedKigaNoteService.setCachedContent).toHaveBeenCalledWith(mockUser.uid, 'note-1', mockFirebaseContent);
+      });
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should show an error toast if loading a note fails', async () => {
+      // 初期状態セットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      
+      // キャッシュはなし
+      mockedKigaNoteService.getCachedContent.mockReturnValue(null);
+
+      // Firebaseからの取得が失敗するようにモック
+      const error = new Error('Failed to fetch from Firebase');
+      mockedKigaNoteService.fetchNoteContent.mockRejectedValue(error);
+
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+
+      // 初期ロードとノート選択を待つ
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+
+      // 検証
+      await waitFor(() => {
+        expect(mockedToast.error).toHaveBeenCalledWith(`ノートの読み込みに失敗しました: ${error.message}`);
+        // ローディング状態が解除されること
+        expect(result.current.isNoteLoading).toBe(false);
+        // エディタが再度有効化されること
+        expect(mockEditor.setEditable).toHaveBeenCalledWith(true);
+      });
+    });
+
+    it('should show an error toast if saving a note fails', async () => {
+      // 初期状態セットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+
+      // 保存失敗をモック
+      const error = new Error('Failed to save');
+      mockedKigaNoteService.saveNote.mockRejectedValue(error);
+
+      await act(async () => {
+        await result.current.handleSave();
+      });
+
+      // 検証
+      expect(mockedToast.error).toHaveBeenCalledWith(`保存失敗: ${error.message}`, { id: 'toast-loading-id' });
+      expect(result.current.isSaving).toBe(false);
+    });
+
+    it('should show an error toast if deleting a note fails', async () => {
+      // 初期状態セットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1, note2]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+
+      // 削除失敗をモック
+      const error = new Error('Failed to delete');
+      mockedKigaNoteService.deleteNote.mockRejectedValue(error);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      await act(async () => {
+        await result.current.handleDelete();
+      });
+
+      // 検証
+      expect(mockedToast.error).toHaveBeenCalledWith(`削除失敗: ${error.message}`, { id: 'toast-loading-id' });
+      expect(result.current.isDeleting).toBe(false);
+    });
+  });
+
+  describe('State Persistence on Note Switch', () => {
+    it('should cache unsaved content when switching notes and restore it when switching back', async () => {
+      // 1. 初期状態として2つのノートをセットアップ
+      mockedKigaNoteService.fetchNotesList.mockResolvedValue([note1, note2]);
+      mockedKigaNoteService.getLastOpenedNoteId.mockReturnValue('note-1');
+      const initialContentNote1 = { type: 'doc', content: [{ type: 'paragraph', text: 'Initial Note 1' }] };
+      const initialContentNote2 = { type: 'doc', content: [{ type: 'paragraph', text: 'Initial Note 2' }] };
+      mockedKigaNoteService.fetchNoteContent
+        .mockResolvedValueOnce(initialContentNote1)
+        .mockResolvedValueOnce(initialContentNote2);
+
+      const { result } = renderHook(() => useKigaNote(mockEditor as any));
+
+      // 2. note-1が読み込まれるのを待つ
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+      expect(mockEditor.commands.setContent).toHaveBeenCalledWith(initialContentNote1, false);
+
+      // 3. note-1の内容を編集する（エディタの状態をシミュレート）
+      const editedContentNote1 = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Edited Note 1' }] }] };
+      mockEditor.getJSON.mockReturnValue(editedContentNote1);
+
+      // 4. note-2に切り替える
+      await act(async () => {
+        result.current.handleSelectNote('note-2');
+      });
+      
+      // note-2が読み込まれるのを待つ
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-2'));
+      // この時点でnote-1の編集内容がキャッシュされているはず
+      expect(mockedKigaNoteService.setCachedContent).toHaveBeenCalledWith(mockUser.uid, 'note-1', editedContentNote1);
+      expect(mockEditor.commands.setContent).toHaveBeenCalledWith(initialContentNote2, false);
+
+      // 5. 再びnote-1に戻る
+      // note-2の内容をシミュレート
+      const editedContentNote2 = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Edited Note 2' }] }] };
+      mockEditor.getJSON.mockReturnValue(editedContentNote2);
+
+      await act(async () => {
+        result.current.handleSelectNote('note-1');
+      });
+
+      // 6. note-1の編集中の内容が復元されることを確認
+      await waitFor(() => expect(result.current.currentNoteId).toBe('note-1'));
+      // この時点でnote-2の内容がキャッシュされているはず
+      expect(mockedKigaNoteService.setCachedContent).toHaveBeenCalledWith(mockUser.uid, 'note-2', editedContentNote2);
+      // そして、note-1の編集済み内容がエディタにセットされるはず
+      expect(mockEditor.commands.setContent).toHaveBeenLastCalledWith(editedContentNote1, false);
     });
   });
 });
